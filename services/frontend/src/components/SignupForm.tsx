@@ -3,9 +3,9 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { login } from "@/lib/api";
+import { login, signup } from "@/lib/api";
 
-export function LoginForm() {
+export function SignupForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -17,17 +17,18 @@ export function LoginForm() {
     setError(null);
     setIsSubmitting(true);
     try {
+      await signup(email, password);
       const token = await login(email, password);
       localStorage.setItem("token", token);
       router.push("/tasks");
-    } catch {
-      setError("Invalid email or password");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Signup failed");
       setIsSubmitting(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} aria-label="login-form">
+    <form onSubmit={handleSubmit} aria-label="signup-form">
       <div className="field">
         <label htmlFor="email">Email</label>
         <input
@@ -44,18 +45,19 @@ export function LoginForm() {
         <input
           id="password"
           type="password"
-          autoComplete="current-password"
+          autoComplete="new-password"
+          minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
       </div>
       <button type="submit" className="btn-primary" disabled={isSubmitting} aria-busy={isSubmitting}>
-        {isSubmitting ? "Logging in…" : "Log in"}
+        {isSubmitting ? "Creating account…" : "Create account"}
       </button>
       {error && <p role="alert">{error}</p>}
       <p style={{ textAlign: "center", marginTop: "1rem", marginBottom: 0 }}>
-        No account yet? <Link href="/signup">Sign up</Link>
+        Already have an account? <Link href="/login">Log in</Link>
       </p>
     </form>
   );

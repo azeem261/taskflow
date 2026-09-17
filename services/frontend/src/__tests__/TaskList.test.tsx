@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { TaskList } from "@/components/TaskList";
 
 describe("TaskList", () => {
   it("renders an empty state when there are no tasks", () => {
-    render(<TaskList tasks={[]} />);
+    render(<TaskList tasks={[]} onStatusChange={vi.fn()} onDelete={vi.fn()} />);
     expect(screen.getByText(/no tasks yet/i)).toBeInTheDocument();
   });
 
@@ -13,16 +13,18 @@ describe("TaskList", () => {
       <TaskList
         tasks={[
           {
-            id: "1",
+            id: 1,
             title: "Write tests",
             description: "Cover the happy path",
             status: "todo",
             owner: "alice@example.com",
           },
         ]}
+        onStatusChange={vi.fn()}
+        onDelete={vi.fn()}
       />
     );
     expect(screen.getByText("Write tests")).toBeInTheDocument();
-    expect(screen.getByText("To do")).toBeInTheDocument();
+    expect(screen.getByText("To do", { selector: "span" })).toBeInTheDocument();
   });
 });

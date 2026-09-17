@@ -160,7 +160,8 @@ label {
 }
 
 input,
-textarea {
+textarea,
+select {
   font: inherit;
   font-size: 16px;
   padding: 10px 12px;
@@ -179,6 +180,7 @@ textarea {
 
 input:focus-visible,
 textarea:focus-visible,
+select:focus-visible,
 button:focus-visible,
 a:focus-visible {
   outline: none;
@@ -192,6 +194,9 @@ button {
 }
 
 .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-top: var(--space-lg);
   padding: 12px 20px;
   min-height: 44px;
@@ -213,6 +218,9 @@ button {
 }
 
 .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 8px 16px;
   min-height: 40px;
   font-weight: 600;
@@ -226,6 +234,38 @@ button {
 .btn-secondary:hover {
   background: var(--color-primary);
   color: var(--color-on-primary);
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  color: var(--color-muted-foreground);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: color var(--transition), border-color var(--transition), background-color var(--transition);
+}
+
+.btn-icon:hover {
+  color: var(--color-destructive);
+  border-color: var(--color-destructive);
+  background: var(--color-destructive-bg);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Alerts */
@@ -272,6 +312,20 @@ button {
 
 .task-list p {
   margin: var(--space-xs) 0 0;
+  font-size: 0.9rem;
+}
+
+.task-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.task-actions select {
+  flex: 1;
+  min-height: 40px;
+  padding: 6px 10px;
   font-size: 0.9rem;
 }
 
