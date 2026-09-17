@@ -3,11 +3,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import create_access_token, hash_password, verify_password
-from app.database import Base, engine, get_db
+from app.database import get_db
 from app.models import User
 from app.schemas import LoginRequest, SignupRequest, TokenResponse, UserResponse
 
-Base.metadata.create_all(bind=engine)
+# Schema is owned by Alembic migrations (see alembic/), applied via
+# `alembic upgrade head` before the app starts (see Dockerfile CMD).
+# The app itself no longer calls Base.metadata.create_all().
 
 app = FastAPI(title="auth-service")
 

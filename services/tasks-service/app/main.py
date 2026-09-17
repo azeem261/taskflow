@@ -2,12 +2,14 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_owner
-from app.database import Base, engine, get_db
+from app.database import get_db
 from app.models import Task
 from app.redis_client import publish_task_event
 from app.schemas import TaskCreate, TaskResponse, TaskUpdate
 
-Base.metadata.create_all(bind=engine)
+# Schema is owned by Alembic migrations (see alembic/), applied via
+# `alembic upgrade head` before the app starts (see Dockerfile CMD).
+# The app itself no longer calls Base.metadata.create_all().
 
 app = FastAPI(title="tasks-service")
 

@@ -1,5 +1,3 @@
-version: "3.9"
-
 x-shared-jwt-secret: &jwt-secret dev-secret-change-me
 
 services:
@@ -12,75 +10,74 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 64M
+        reservations:
+          memory: 32M
 
-  auth-db:
+  # Single Postgres server shared by all three services. Each service gets
+  # its own logical database (auth / tasks / analytics) inside it rather
+  # than its own container — one Postgres process to run and back up
+  # instead of three, which matters on a small VPS, while each service
+  # still only ever touches its own database.
+  postgres:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: auth
     volumes:
-      - auth-db-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d auth"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 3s
       retries: 5
-
-  tasks-db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: tasks
-    volumes:
-      - tasks-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d tasks"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
-  analytics-db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: analytics
-    volumes:
-      - analytics-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d analytics"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 512M
+        reservations:
+          memory: 256M
 
   auth-service:
     build: ./services/auth-service
     ports:
       - "8001:8000"
     environment:
-      AUTH_DATABASE_URL: postgresql://postgres:postgres@auth-db:5432/auth
+      AUTH_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/auth
       AUTH_JWT_SECRET: *jwt-secret
     depends_on:
-      auth-db:
+      postgres:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 5s
       timeout: 3s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          memory: 128M
 
   tasks-service:
     build: ./services/tasks-service
     ports:
       - "8002:8000"
     environment:
-      TASKS_DATABASE_URL: postgresql://postgres:postgres@tasks-db:5432/tasks
+      TASKS_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/tasks
       TASKS_JWT_SECRET: *jwt-secret
       TASKS_REDIS_URL: redis://redis:6379/0
     depends_on:
-      tasks-db:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -89,6 +86,13 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          memory: 128M
 
   notifications-service:
     build: ./services/notifications-service
@@ -104,16 +108,23 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          memory: 128M
 
   analytics-service:
     build: ./services/analytics-service
     ports:
       - "8004:8000"
     environment:
-      ANALYTICS_DATABASE_URL: postgresql://postgres:postgres@analytics-db:5432/analytics
+      ANALYTICS_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/analytics
       ANALYTICS_REDIS_URL: redis://redis:6379/0
     depends_on:
-      analytics-db:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -122,6 +133,13 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          memory: 128M
 
   frontend:
     build: ./services/frontend
@@ -135,8 +153,13 @@ services:
         condition: service_healthy
       tasks-service:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 512M
+        reservations:
+          memory: 256M
 
 volumes:
-  auth-db-data:
-  tasks-db-data:
-  analytics-db-data:
+  postgres-data:

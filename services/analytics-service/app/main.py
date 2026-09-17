@@ -7,10 +7,12 @@ from sqlalchemy.orm import Session
 
 from app.aggregator import listen
 from app.config import settings
-from app.database import Base, SessionLocal, engine, get_db
+from app.database import SessionLocal, get_db
 from app.models import StatusCount
 
-Base.metadata.create_all(bind=engine)
+# Schema is owned by Alembic migrations (see alembic/), applied via
+# `alembic upgrade head` before the app starts (see Dockerfile CMD).
+# The app itself no longer calls Base.metadata.create_all().
 
 
 @asynccontextmanager
