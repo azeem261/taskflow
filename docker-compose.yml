@@ -1,0 +1,142 @@
+version: "3.9"
+
+x-shared-jwt-secret: &jwt-secret dev-secret-change-me
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  auth-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: auth
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d auth"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  tasks-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tasks
+    volumes:
+      - tasks-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tasks"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  analytics-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: analytics
+    volumes:
+      - analytics-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d analytics"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  auth-service:
+    build: ./services/auth-service
+    ports:
+      - "8001:8000"
+    environment:
+      AUTH_DATABASE_URL: postgresql://postgres:postgres@auth-db:5432/auth
+      AUTH_JWT_SECRET: *jwt-secret
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  tasks-service:
+    build: ./services/tasks-service
+    ports:
+      - "8002:8000"
+    environment:
+      TASKS_DATABASE_URL: postgresql://postgres:postgres@tasks-db:5432/tasks
+      TASKS_JWT_SECRET: *jwt-secret
+      TASKS_REDIS_URL: redis://redis:6379/0
+    depends_on:
+      tasks-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  notifications-service:
+    build: ./services/notifications-service
+    ports:
+      - "8003:8000"
+    environment:
+      NOTIFICATIONS_REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  analytics-service:
+    build: ./services/analytics-service
+    ports:
+      - "8004:8000"
+    environment:
+      ANALYTICS_DATABASE_URL: postgresql://postgres:postgres@analytics-db:5432/analytics
+      ANALYTICS_REDIS_URL: redis://redis:6379/0
+    depends_on:
+      analytics-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  frontend:
+    build: ./services/frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_AUTH_URL: http://localhost:8001
+      NEXT_PUBLIC_TASKS_URL: http://localhost:8002
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      tasks-service:
+        condition: service_healthy
+
+volumes:
+  auth-db-data:
+  tasks-db-data:
+  analytics-db-data:

@@ -1,0 +1,16 @@
+node_modules/
+.next/
+dist/
+build/
+*.pyc
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+*.egg-info/
+.env
+.DS_Store
+inventory.ini
