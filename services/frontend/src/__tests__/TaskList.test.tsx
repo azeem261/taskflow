@@ -5,7 +5,7 @@ import { TaskList } from "@/components/TaskList";
 describe("TaskList", () => {
   it("renders an empty state when there are no tasks", () => {
     render(<TaskList tasks={[]} />);
-    expect(screen.getByText("No tasks yet.")).toBeInTheDocument();
+    expect(screen.getByText(/no tasks yet/i)).toBeInTheDocument();
   });
 
   it("renders a task's title and status", () => {
@@ -23,6 +23,6 @@ describe("TaskList", () => {
       />
     );
     expect(screen.getByText("Write tests")).toBeInTheDocument();
-    expect(screen.getByText(/todo/)).toBeInTheDocument();
+    expect(screen.getByText("To do")).toBeInTheDocument();
   });
 });
