@@ -16,8 +16,12 @@ export default function TasksPage() {
   return (
     <main>
       <h1>Your tasks</h1>
-      <TaskForm onCreated={(task) => setTasks((prev) => [...prev, task])} />
-      <TaskList tasks={tasks} />
+      <div className="card">
+        <TaskForm onCreated={(task) => setTasks((prev) => [...prev, task])} />
+      </div>
+      <div style={{ marginTop: 24 }}>
+        <TaskList tasks={tasks} />
+      </div>
     </main>
   );
 }

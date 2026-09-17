@@ -8,8 +8,8 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
     <ul>
       {tasks.map((task) => (
         <li key={task.id}>
-          <strong>{task.title}</strong> — {task.status}
-          <p>{task.description}</p>
+          <strong>{task.title}</strong> <span className="status">{task.status}</span>
+          {task.description && <p>{task.description}</p>}
         </li>
       ))}
     </ul>
