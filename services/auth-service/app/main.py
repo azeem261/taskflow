@@ -1,8 +1,10 @@
 from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import create_access_token, hash_password, verify_password
+from app.config import settings
 from app.database import get_db
 from app.models import User
 from app.schemas import LoginRequest, SignupRequest, TokenResponse, UserResponse
@@ -12,6 +14,18 @@ from app.schemas import LoginRequest, SignupRequest, TokenResponse, UserResponse
 # The app itself no longer calls Base.metadata.create_all().
 
 app = FastAPI(title="auth-service")
+
+# The frontend calls this API directly from the browser (not through a
+# server-side proxy), so the browser enforces CORS on every request.
+# Without this, the preflight OPTIONS request gets rejected and the
+# browser blocks the real request before it ever reaches signup/login.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")

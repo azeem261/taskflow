@@ -1,7 +1,9 @@
 from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_owner
+from app.config import settings
 from app.database import get_db
 from app.models import Task
 from app.redis_client import publish_task_event
@@ -12,6 +14,17 @@ from app.schemas import TaskCreate, TaskResponse, TaskUpdate
 # The app itself no longer calls Base.metadata.create_all().
 
 app = FastAPI(title="tasks-service")
+
+# The frontend calls this API directly from the browser, so the browser
+# enforces CORS on every request. Without this, the preflight OPTIONS
+# request gets rejected and real requests never reach these endpoints.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")
