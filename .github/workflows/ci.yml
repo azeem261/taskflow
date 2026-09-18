@@ -39,6 +39,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      sha: ${{ steps.sha.outputs.short }}
     strategy:
       fail-fast: false
       matrix:
@@ -173,6 +175,20 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      # Copies the compose file fresh every run instead of relying on a
+      # git clone living on the VPS — see PR/commit description for why.
+      - name: Copy docker-compose.yml to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "docker-compose.yml"
+          target: "~/taskflow"
+          overwrite: true
+
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -180,4 +196,6 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /home/deploy/taskflow && docker compose pull && docker compose up -d
+            cd ~/taskflow && \
+            IMAGE_TAG=${{ needs.build-and-push.outputs.sha }} docker compose pull && \
+            IMAGE_TAG=${{ needs.build-and-push.outputs.sha }} docker compose up -d

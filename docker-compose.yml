@@ -47,6 +47,7 @@ services:
 
   auth-service:
     build: ./services/auth-service
+    image: ghcr.io/azeem261/auth-service:${IMAGE_TAG:-latest}
     ports:
       - "8001:8000"
     environment:
@@ -70,6 +71,7 @@ services:
 
   tasks-service:
     build: ./services/tasks-service
+    image: ghcr.io/azeem261/tasks-service:${IMAGE_TAG:-latest}
     ports:
       - "8002:8000"
     environment:
@@ -96,6 +98,7 @@ services:
 
   notifications-service:
     build: ./services/notifications-service
+    image: ghcr.io/azeem261/notifications-service:${IMAGE_TAG:-latest}
     ports:
       - "8003:8000"
     environment:
@@ -118,6 +121,7 @@ services:
 
   analytics-service:
     build: ./services/analytics-service
+    image: ghcr.io/azeem261/analytics-service:${IMAGE_TAG:-latest}
     ports:
       - "8004:8000"
     environment:
@@ -143,6 +147,7 @@ services:
 
   frontend:
     build: ./services/frontend
+    image: ghcr.io/azeem261/frontend:${IMAGE_TAG:-latest}
     ports:
       - "3000:3000"
     environment:
