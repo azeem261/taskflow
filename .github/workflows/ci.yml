@@ -14,6 +14,12 @@ jobs:
       services: ${{ steps.matrix.outputs.services }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # paths-filter diffs against the parent commit on push events;
+          # the default shallow (depth-1) checkout has no parent to diff
+          # against, so every filter silently comes back false. Full
+          # history (0) also covers pushes with more than one commit.
+          fetch-depth: 0
       - uses: dorny/paths-filter@v3
         id: filter
         with:
