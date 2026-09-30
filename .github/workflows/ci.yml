@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch: {}
 
 jobs:
   changes:
@@ -31,12 +32,16 @@ jobs:
       # Job-level `if` can't see `matrix` (matrix only exists inside a job
       # that declares it), so instead of trying to skip matrix legs after
       # the fact, only create a leg for each service that actually changed.
+      # Manual runs (workflow_dispatch) have no push diff to filter on, so
+      # they force every service in, letting you exercise the full pipeline
+      # (including deploy) on demand without touching service code.
       - name: Build matrix of changed services
         id: matrix
         run: |
+          force="${{ github.event_name == 'workflow_dispatch' }}"
           services='[]'
           add() {
-            if [ "$2" = "true" ]; then
+            if [ "$force" = "true" ] || [ "$2" = "true" ]; then
               services=$(echo "$services" | jq --arg s "$1" --arg r "$3" --argjson db "$4" \
                 '. + [{service:$s, runtime:$r, has_db:$db}]')
             fi
@@ -157,7 +162,7 @@ jobs:
           exit-code: '1'
 
       - name: Log in to GHCR
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -165,7 +170,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push image
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         run: |
           docker tag ${{ matrix.service }}:${{ steps.sha.outputs.short }} \
             ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}:${{ steps.sha.outputs.short }}
@@ -173,7 +178,7 @@ jobs:
 
   deploy:
     needs: build-and-push
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
