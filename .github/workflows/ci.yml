@@ -145,7 +145,7 @@ jobs:
         run: npm test
 
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: services/${{ matrix.service }}
@@ -160,7 +160,7 @@ jobs:
           load: true
 
       - name: Trivy image scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: image
           image-ref: ${{ matrix.service }}:${{ steps.sha.outputs.short }}
@@ -192,7 +192,7 @@ jobs:
       # Copies the compose file fresh every run instead of relying on a
       # git clone living on the VPS — see PR/commit description for why.
       - name: Copy docker-compose.yml to VPS
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
@@ -202,7 +202,7 @@ jobs:
           overwrite: true
 
       - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
