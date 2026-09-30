@@ -53,6 +53,9 @@ services:
     environment:
       AUTH_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/auth
       AUTH_JWT_SECRET: *jwt-secret
+      # PUBLIC_HOST defaults to localhost for local dev; deploy sets it
+      # via a .env file so the browser-facing frontend origin is allowed.
+      AUTH_CORS_ORIGINS: http://localhost:3000,http://${PUBLIC_HOST:-localhost}:3000
     depends_on:
       postgres:
         condition: service_healthy
@@ -78,6 +81,7 @@ services:
       TASKS_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/tasks
       TASKS_JWT_SECRET: *jwt-secret
       TASKS_REDIS_URL: redis://redis:6379/0
+      TASKS_CORS_ORIGINS: http://localhost:3000,http://${PUBLIC_HOST:-localhost}:3000
     depends_on:
       postgres:
         condition: service_healthy
@@ -151,8 +155,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_AUTH_URL: http://localhost:8001
-      NEXT_PUBLIC_TASKS_URL: http://localhost:8002
+      NEXT_PUBLIC_AUTH_URL: http://${PUBLIC_HOST:-localhost}:8001
+      NEXT_PUBLIC_TASKS_URL: http://${PUBLIC_HOST:-localhost}:8002
     depends_on:
       auth-service:
         condition: service_healthy

@@ -209,4 +209,6 @@ jobs:
           # most recently pushed image rather than one shared SHA that not
           # all 5 services necessarily have (see Push image step above).
           script: |
-            cd ~/taskflow && docker compose pull && docker compose up -d
+            cd ~/taskflow && \
+            echo "PUBLIC_HOST=${{ secrets.VPS_HOST }}" > .env && \
+            docker compose pull && docker compose up -d

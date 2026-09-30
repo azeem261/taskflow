@@ -7,10 +7,14 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     redis_url: str = "redis://redis:6379/0"
     task_events_channel: str = "task-events"
-    cors_origins: list[str] = ["http://localhost:3000"]
+    cors_origins: str = "http://localhost:3000"
 
     class Config:
         env_prefix = "TASKS_"
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
 
 settings = Settings()
