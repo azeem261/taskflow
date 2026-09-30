@@ -10,11 +10,7 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      auth-service: ${{ steps.filter.outputs.auth-service }}
-      tasks-service: ${{ steps.filter.outputs.tasks-service }}
-      analytics-service: ${{ steps.filter.outputs.analytics-service }}
-      notifications-service: ${{ steps.filter.outputs.notifications-service }}
-      frontend: ${{ steps.filter.outputs.frontend }}
+      services: ${{ steps.matrix.outputs.services }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -32,9 +28,29 @@ jobs:
             frontend:
               - 'services/frontend/**'
 
+      # Job-level `if` can't see `matrix` (matrix only exists inside a job
+      # that declares it), so instead of trying to skip matrix legs after
+      # the fact, only create a leg for each service that actually changed.
+      - name: Build matrix of changed services
+        id: matrix
+        run: |
+          services='[]'
+          add() {
+            if [ "$2" = "true" ]; then
+              services=$(echo "$services" | jq --arg s "$1" --arg r "$3" --argjson db "$4" \
+                '. + [{service:$s, runtime:$r, has_db:$db}]')
+            fi
+          }
+          add auth-service "${{ steps.filter.outputs.auth-service }}" python true
+          add tasks-service "${{ steps.filter.outputs.tasks-service }}" python true
+          add analytics-service "${{ steps.filter.outputs.analytics-service }}" python true
+          add notifications-service "${{ steps.filter.outputs.notifications-service }}" python false
+          add frontend "${{ steps.filter.outputs.frontend }}" node false
+          echo "services=$(echo "$services" | jq -c .)" >> "$GITHUB_OUTPUT"
+
   build-and-push:
     needs: changes
-    if: needs.changes.outputs[matrix.service] == 'true'
+    if: needs.changes.outputs.services != '[]'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -44,22 +60,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - service: auth-service
-            runtime: python
-            has_db: true
-          - service: tasks-service
-            runtime: python
-            has_db: true
-          - service: analytics-service
-            runtime: python
-            has_db: true
-          - service: notifications-service
-            runtime: python
-            has_db: false
-          - service: frontend
-            runtime: node
-            has_db: false
+        include: ${{ fromJSON(needs.changes.outputs.services) }}
     services:
       postgres:
         image: postgres:16-alpine
