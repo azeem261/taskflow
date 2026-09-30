@@ -162,9 +162,18 @@ jobs:
       - name: Push image
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         run: |
+          # Path-filtering means not every service rebuilds on every push, so
+          # deploy can't pin all 5 services to this run's SHA — a service
+          # untouched by this commit would have no image at that tag. Always
+          # also push `:latest` per service; deploy pulls `:latest` for
+          # everything, which is always whatever that service last built.
+          # The SHA tag stays too, for traceability/manual rollback.
           docker tag ${{ matrix.service }}:${{ steps.sha.outputs.short }} \
             ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}:${{ steps.sha.outputs.short }}
+          docker tag ${{ matrix.service }}:${{ steps.sha.outputs.short }} \
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}:latest
           docker push ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}:${{ steps.sha.outputs.short }}
+          docker push ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}:latest
 
   deploy:
     needs: build-and-push
@@ -191,7 +200,9 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          # No IMAGE_TAG override here — docker-compose.yml's own default
+          # (${IMAGE_TAG:-latest}) applies, so every service pulls its own
+          # most recently pushed image rather than one shared SHA that not
+          # all 5 services necessarily have (see Push image step above).
           script: |
-            cd ~/taskflow && \
-            IMAGE_TAG=${{ needs.build-and-push.outputs.sha }} docker compose pull && \
-            IMAGE_TAG=${{ needs.build-and-push.outputs.sha }} docker compose up -d
+            cd ~/taskflow && docker compose pull && docker compose up -d
