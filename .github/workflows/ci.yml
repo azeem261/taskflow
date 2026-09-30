@@ -182,15 +182,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Copies the compose file fresh every run instead of relying on a
-      # git clone living on the VPS — see PR/commit description for why.
-      - name: Copy docker-compose.yml to VPS
+      # Copies the compose file (and the Postgres init script it mounts)
+      # fresh every run instead of relying on a git clone living on the
+      # VPS — see PR/commit description for why. postgres/init/** must
+      # come along too: on a brand-new Postgres data dir, that script is
+      # what creates the tasks/analytics databases, and without it only
+      # the default (auth) database exists.
+      - name: Copy docker-compose.yml and postgres init scripts to VPS
         uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "docker-compose.yml"
+          source: "docker-compose.yml,postgres/init/**"
           target: "~/taskflow"
           overwrite: true
 
