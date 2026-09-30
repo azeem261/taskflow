@@ -1,7 +1,7 @@
 """create status_counts table
 
 Revision ID: 0b017b8de72f
-Revises: 
+Revises:
 Create Date: 2026-09-17 19:44:13.850265
 
 """
