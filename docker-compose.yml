@@ -157,6 +157,9 @@ services:
     environment:
       NEXT_PUBLIC_AUTH_URL: http://${PUBLIC_HOST:-localhost}:8001
       NEXT_PUBLIC_TASKS_URL: http://${PUBLIC_HOST:-localhost}:8002
+      # Read directly by next.config.js (allowedDevOrigins), not by the
+      # browser bundle, so it's a plain var, not NEXT_PUBLIC_-prefixed.
+      PUBLIC_HOST: ${PUBLIC_HOST:-localhost}
     depends_on:
       auth-service:
         condition: service_healthy
